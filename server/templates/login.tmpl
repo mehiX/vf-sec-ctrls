@@ -1,0 +1,24 @@
+{{ define "login" }}
+<html>
+    <head>
+        {{ template "head" "Login" }}
+    </head>
+    <body>
+        <div class="container">
+            <form method="POST" action="/login">
+                <div>
+                    <label for="user">User:</label>
+                    <input type="text" maxlength="60" name="user" id="user">
+                </div>
+                <div>
+                    <label for="passwd">Password:</label>
+                    <input type="password" name="passwd" id="passwd">
+                </div>
+                <div>
+                    <input type="submit" value="Login">
+                </div>
+            </form>
+        </div>
+    </body>
+</html>
+{{ end }}
