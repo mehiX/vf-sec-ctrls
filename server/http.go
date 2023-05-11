@@ -33,23 +33,12 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 
 	m.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
-	m.Get("/login", func(w http.ResponseWriter, r *http.Request) {
-		respData := struct {
-			Error string
-		}{
-			Error: r.URL.Query().Get("error"),
-		}
-
-		w.Header().Set("Content-type", "text/html;charset=utf-8")
-		if err := s.tmpl.ExecuteTemplate(w, "login", respData); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	})
+	m.Get("/login", s.handleShowLogin)
+	m.Get("/logout", s.handleLogout)
 
 	m.Group(func(m chi.Router) {
 		m.Use(jwtauth.Verifier(s.tokenAuth))
-		m.Use(jwtauth.Authenticator)
+		m.Use(Authenticator)
 
 		m.Get("/user", s.handleShowUser)
 		m.Get("/upload", s.handleShowUploadForm)
@@ -117,6 +106,20 @@ func renderTxt(w http.ResponseWriter, r *http.Request, entries []categ.Entry) {
 	}
 }
 
+func (s *Server) handleShowLogin(w http.ResponseWriter, r *http.Request) {
+	respData := struct {
+		Error string
+	}{
+		Error: r.URL.Query().Get("error"),
+	}
+
+	w.Header().Set("Content-type", "text/html;charset=utf-8")
+	if err := s.tmpl.ExecuteTemplate(w, "login", respData); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	user := r.FormValue("user")
 	passwd := r.FormValue("passwd")
@@ -166,6 +169,18 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	cookie, _ := r.Cookie("jwt")
+	if cookie != nil {
+		cookie.Expires = time.Now()
+	}
+
+	http.SetCookie(w, cookie)
+
+	w.Header().Set("Location", "/login")
+	w.WriteHeader(http.StatusFound)
+}
+
 func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(2 << 10); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -197,8 +212,6 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	newH.Print(true)
 
 	h = newH
 
