@@ -1,0 +1,75 @@
+{{ define "controls" }}
+<html>
+    <head>
+        {{ template "head" "Controls" }}
+        <style type="text/css">
+            body {
+                background-color: #FFFFFF;
+            }
+            .ui.menu .item img.logo {
+                margin-right: 1.5em;
+            }
+            .main.container {
+                margin-top: 7em;
+                min-height: 30em;
+            }
+            .wireframe {
+                margin-top: 2em;
+            }
+            .ui.footer.segment {
+                margin: 5em 0em 0em;
+                padding: 5em 0em;
+            }
+        </style>
+        <script>
+            var categoryContent = [
+                {{ range .Controls }}
+              { category: '{{ .Type }}', title: '{{ .ID }} - {{ .Name }}', url: '/controls/{{.ID}}' },
+                {{ end }}
+            ];
+        </script>
+    </head>
+    <body>
+        <div class="ui fixed inverted borderless menu">
+            <div class="ui container">
+                <a href="/" class="header item">
+                    Security checks
+                </a>
+                <a href="/upload" class="item">Upload</a>
+                <a class="right item" href="/logout">
+                    <i class="logout icon"></i>
+                </a>
+            </div>
+        </div>
+        <div class="ui main text container">
+            <div class="ui fluid search">
+                <div class="ui icon fluid input">
+                    <input class="prompt" type="text" placeholder="Search controls...">
+                    <i class="search icon"></i>
+                </div>
+                <div class="results"></div>
+            </div>
+            {{ if .Control }}
+            <div class="ui fluid card">
+                <div class="content">
+                    <div class="header">{{.Control.ID}} - {{.Control.Name}}</div>
+                    <div class="meta">[{{.Control.Type}}]</div>
+                    <div class="description">
+                        <p>here some description</p>
+                    </div>
+                </div>
+            </div>
+            {{ end }}
+        </div>
+        <script>
+        $('.ui.search')
+                .search({
+                    type: 'category',
+                    source: categoryContent,
+                    searchFields: ['title', 'category'],
+                    fullTextSearch: 'exact',
+                });
+        </script>
+    </body>
+</html>
+{{ end }}

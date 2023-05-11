@@ -105,6 +105,15 @@ func (h *Hierarchy) Entries() []Entry {
 	return entries
 }
 
+func (h *Hierarchy) Entry(id string) *Entry {
+	e, ok := h.data[id]
+	if !ok {
+		return nil
+	}
+
+	return &e
+}
+
 func BuildTree(entries []Entry) *tree.Node {
 
 	ids := make([]string, len(entries))

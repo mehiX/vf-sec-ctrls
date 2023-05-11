@@ -29,7 +29,6 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 	m.Use(middleware.Logger)
 	m.Use(middleware.RequestID)
 	m.Use(middleware.RealIP)
-	m.Use(middleware.Maybe(middleware.URLFormat, func(r *http.Request) bool { return !strings.HasPrefix(r.URL.Path, "/controls/") }))
 
 	m.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
@@ -47,8 +46,8 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 
 	m.Post("/login", s.handleLogin)
 
-	m.Get("/controls", func(w http.ResponseWriter, r *http.Request) {
-		format, _ := r.Context().Value(middleware.URLFormatCtxKey).(string)
+	m.Get("/controls/list/{format:(json|txt)}", func(w http.ResponseWriter, r *http.Request) {
+		format := chi.URLParam(r, "format")
 
 		entries := make([]categ.Entry, 0)
 		if h != nil {
@@ -65,7 +64,7 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 		}
 
 	})
-	m.Get("/controls/{format:(json|txt)}/{categoryID:[0-9.]+}", func(w http.ResponseWriter, r *http.Request) {
+	m.Get("/controls/{categoryID:[0-9.]+}/{format:(json|txt)}", func(w http.ResponseWriter, r *http.Request) {
 		categoryID := chi.URLParam(r, "categoryID")
 
 		controls := make([]categ.Entry, 0)
@@ -87,6 +86,9 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 		}
 
 	})
+
+	m.Get("/controls/", s.handleShowControls)
+	m.Get("/controls/{id:[0-9.]+}", s.handleShowControls)
 
 	return m
 
@@ -215,7 +217,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	h = newH
 
-	w.Header().Set("Location", "/controls.json")
+	w.Header().Set("Location", "/controls/")
 	w.WriteHeader(http.StatusFound)
 
 }
@@ -246,6 +248,29 @@ func (s *Server) handleShowUploadForm(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-type", "text/html; charset=utf-8")
 	if err := s.tmpl.ExecuteTemplate(w, "upload", nil); err != nil {
 		log.Printf("executing template 'upload': %v\n", err)
+		http.Error(w, "page is broken", http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) handleShowControls(w http.ResponseWriter, r *http.Request) {
+	type responseData struct {
+		Controls []categ.Entry
+		Control  *categ.Entry // search result
+	}
+
+	id := chi.URLParam(r, "id")
+
+	data := responseData{
+		Control: h.Entry(id),
+	}
+	if h != nil {
+		data.Controls = h.Entries()
+	}
+
+	w.Header().Set("Content-type", "text/html; charset=utf-8")
+	if err := s.tmpl.ExecuteTemplate(w, "controls", data); err != nil {
+		log.Printf("executing template 'controls': %v\n", err)
 		http.Error(w, "page is broken", http.StatusInternalServerError)
 		return
 	}
