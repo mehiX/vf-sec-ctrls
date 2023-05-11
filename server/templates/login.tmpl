@@ -2,22 +2,48 @@
 <html>
     <head>
         {{ template "head" "Login" }}
+        <style type="text/css">
+            body {
+            background-color: #DADADA;
+            }
+            body > .grid {
+            height: 100%;
+            }
+            .image {
+            margin-top: -100px;
+            }
+            .column {
+            max-width: 450px;
+            }
+        </style>
     </head>
     <body>
-        <div class="container">
-            <form method="POST" action="/login">
-                <div>
-                    <label for="user">User:</label>
-                    <input type="text" maxlength="60" name="user" id="user">
-                </div>
-                <div>
-                    <label for="passwd">Password:</label>
-                    <input type="password" name="passwd" id="passwd">
-                </div>
-                <div>
-                    <input type="submit" value="Login">
-                </div>
-            </form>
+        <div class="ui middle aligned center aligned grid">
+            <div class="column">
+                <h2 class="ui blue header">
+                    <div class="content">Log-in to your account</div>
+                </h2>
+                <form class="ui large form" method="POST" action="/login">
+                    <div class="ui stacked segment">
+                        <div class="field">
+                            <div class="ui left icon input">
+                                <i class="user icon"></i>
+                                <input type="text" placeholder="Username" maxlength="60" name="user" id="user">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="ui left icon input">
+                                <i class="lock icon"></i>
+                                <input type="password" placeholder="Password" name="passwd" id="passwd">
+                            </div>
+                        </div>
+                        <input type="submit" class="ui fluid large blue submit button" value="Login"></input>
+                    </div>
+                    {{ if .Error }}
+                        <div class="ui visible error message">{{ .Error }}</div>
+                    {{ end }}
+                </form>
+            </div>
         </div>
     </body>
 </html>

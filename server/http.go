@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -14,6 +15,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/mehix/vf-sec-ctrls/categ"
 )
+
+type errCtxKey struct{}
+
+var ErrContextKey = errCtxKey{}
 
 var h *categ.Hierarchy
 
@@ -29,8 +34,14 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 	m.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
 	m.Get("/login", func(w http.ResponseWriter, r *http.Request) {
+		respData := struct {
+			Error string
+		}{
+			Error: r.URL.Query().Get("error"),
+		}
+
 		w.Header().Set("Content-type", "text/html;charset=utf-8")
-		if err := s.tmpl.ExecuteTemplate(w, "login", nil); err != nil {
+		if err := s.tmpl.ExecuteTemplate(w, "login", respData); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -112,7 +123,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: do the actual validation
 	if user != "mihai" || passwd != "mihaivf" {
-		w.WriteHeader(http.StatusUnauthorized)
+		redirectTo := "/login?error=" + url.QueryEscape("access denied")
+		w.Header().Set("Location", redirectTo)
+		w.WriteHeader(http.StatusFound)
 		return
 	}
 
