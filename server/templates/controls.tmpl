@@ -60,9 +60,10 @@
                     <div class="header">{{.Control.ID}} - {{.Control.Name}}</div>
                     <div class="meta">
                         <div class="ui label">{{.Control.Type}}</div>
+                        {{if .Control.GDPR }}<div class="ui label">GDPR</div>{{end}}
                     </div>
                     <div class="description">
-                        <p>here some description</p>
+                        <p>{{.Control.Description}}</p>
                         <div class="ui relaxed divided list">
                         {{ range .Children }}
                             <a class="item" href="/controls/{{.ID}}/html">{{.ID}} - {{.Name}}</a>

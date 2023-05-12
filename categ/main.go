@@ -24,9 +24,27 @@ func NewHierarchy() *Hierarchy {
 type EntryID string
 
 type Entry struct {
-	Type string
-	ID   EntryID
-	Name string
+	Type                  string
+	ID                    EntryID
+	Name                  string
+	Description           string
+	C                     string
+	I                     string
+	A                     string
+	T                     string
+	PD                    string
+	NSI                   string
+	SESE                  string
+	OTCI                  string
+	CSRDirection          string // CS&R direction for control type
+	SPSA                  string
+	GDPR                  bool
+	ExternalSupplier      bool
+	AssetType             string
+	OperationalCapability string
+	PartOfGISR            bool
+	LastUpdated           string
+	OldID                 string
 }
 
 func (e Entry) Indent(s string) string {
@@ -77,16 +95,40 @@ func NewFromReader(in io.ReadCloser, sheetName string) (*Hierarchy, error) {
 			continue
 		}
 
-		cols, err := rows.Columns()
+		origCols, err := rows.Columns()
 		if err != nil {
 			log.Printf("Row %d: %v\n", counter+1, err)
+			continue
 		}
+
+		// some rows may have less columns filled with data
+		cols := make([]string, 21)
+		copy(cols, origCols)
 
 		entry := Entry{
 			Type: strings.TrimSpace(cols[0]),
 			ID:   EntryID(strings.TrimSpace(cols[1])),
 			Name: strings.TrimSpace(cols[2]),
 		}
+
+		entry.Description = strings.TrimSpace(cols[3])
+		entry.C = strings.TrimSpace(cols[4])
+		entry.I = strings.TrimSpace(cols[5])
+		entry.A = strings.TrimSpace(cols[6])
+		entry.T = strings.TrimSpace(cols[7])
+		entry.PD = strings.TrimSpace(cols[8])
+		entry.NSI = strings.TrimSpace(cols[9])
+		entry.SESE = strings.TrimSpace(cols[10])
+		entry.OTCI = strings.TrimSpace(cols[11])
+		entry.CSRDirection = strings.TrimSpace(cols[12])
+		entry.SPSA = strings.TrimSpace(cols[13])
+		entry.GDPR = strings.TrimSpace(cols[14]) == "GDPR"
+		entry.ExternalSupplier = strings.TrimSpace(cols[15]) != ""
+		entry.AssetType = strings.TrimSpace(cols[16])
+		entry.OperationalCapability = strings.TrimSpace(cols[17])
+		entry.PartOfGISR = strings.ToLower(strings.TrimSpace(cols[18])) == "yes"
+		entry.LastUpdated = strings.TrimSpace(cols[19])
+		entry.OldID = strings.TrimSpace(cols[20])
 
 		h.data[string(entry.ID)] = entry
 	}
