@@ -2,7 +2,6 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -15,10 +14,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/mehix/vf-sec-ctrls/categ"
 )
-
-type errCtxKey struct{}
-
-var ErrContextKey = errCtxKey{}
 
 var h *categ.Hierarchy
 
@@ -35,6 +30,8 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 	m.Get("/login", s.handleShowLogin)
 	m.Get("/logout", s.handleLogout)
 
+	m.Post("/login", s.handleLogin)
+
 	m.Group(func(m chi.Router) {
 		m.Use(jwtauth.Verifier(s.tokenAuth))
 		m.Use(Authenticator)
@@ -42,53 +39,14 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 		m.Get("/user", s.handleShowUser)
 		m.Get("/upload", s.handleShowUploadForm)
 		m.Post("/upload", s.handleUpload)
+
+		m.Route("/controls", func(m chi.Router) {
+			m.Get("/", s.handleShowControlsByID)
+			m.Get("/{id:[0-9.]+}", s.handleShowControlsByID)
+			m.Get("/{id:[0-9.]+}/{format:(json|txt|html)}", s.handleShowControlsByID)
+			m.Get("/list/{format:(json|txt)}", s.handleShowAllControls)
+		})
 	})
-
-	m.Post("/login", s.handleLogin)
-
-	m.Get("/controls/list/{format:(json|txt)}", func(w http.ResponseWriter, r *http.Request) {
-		format := chi.URLParam(r, "format")
-
-		entries := make([]categ.Entry, 0)
-		if h != nil {
-			entries = h.Entries()
-		}
-
-		switch format {
-		case "json":
-			renderJson(w, r, entries)
-		case "txt":
-			renderTxt(w, r, entries)
-		default:
-			renderJson(w, r, entries)
-		}
-
-	})
-	m.Get("/controls/{categoryID:[0-9.]+}/{format:(json|txt)}", func(w http.ResponseWriter, r *http.Request) {
-		categoryID := chi.URLParam(r, "categoryID")
-
-		controls := make([]categ.Entry, 0)
-		if h != nil {
-			controls = h.ControlsByCategory(categoryID)
-		}
-
-		format := chi.URLParam(r, "format")
-
-		fmt.Printf("Requested format: %s\n", format)
-
-		switch format {
-		case "json":
-			renderJson(w, r, controls)
-		case "txt":
-			renderTxt(w, r, controls)
-		default:
-			renderJson(w, r, controls)
-		}
-
-	})
-
-	m.Get("/controls/", s.handleShowControls)
-	m.Get("/controls/{id:[0-9.]+}", s.handleShowControls)
 
 	return m
 
@@ -253,25 +211,66 @@ func (s *Server) handleShowUploadForm(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) handleShowControls(w http.ResponseWriter, r *http.Request) {
-	type responseData struct {
-		Controls []categ.Entry
-		Control  *categ.Entry // search result
-	}
-
+func (s *Server) handleShowControlsByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	data := responseData{
-		Control: h.Entry(id),
-	}
+	controls := make([]categ.Entry, 0)
 	if h != nil {
-		data.Controls = h.Entries()
+		controls = h.ControlsByCategory(id)
 	}
 
-	w.Header().Set("Content-type", "text/html; charset=utf-8")
-	if err := s.tmpl.ExecuteTemplate(w, "controls", data); err != nil {
-		log.Printf("executing template 'controls': %v\n", err)
-		http.Error(w, "page is broken", http.StatusInternalServerError)
-		return
+	format := chi.URLParam(r, "format")
+
+	renderHTML := func() {
+		type responseData struct {
+			Controls []categ.Entry
+			Control  *categ.Entry // search result
+			Parent   *categ.Entry
+			Children []categ.Entry
+		}
+
+		data := responseData{}
+		if h != nil {
+			data.Controls = h.Entries()
+			data.Control = h.Entry(id)
+			data.Parent = h.Parent(id)
+			data.Children = h.ControlsByCategory(id)
+		}
+
+		w.Header().Set("Content-type", "text/html; charset=utf-8")
+		if err := s.tmpl.ExecuteTemplate(w, "controls", data); err != nil {
+			log.Printf("executing template 'controls': %v\n", err)
+			http.Error(w, "page is broken", http.StatusInternalServerError)
+			return
+		}
 	}
+
+	switch format {
+	case "json":
+		renderJson(w, r, controls)
+	case "txt":
+		renderTxt(w, r, controls)
+	default:
+		renderHTML()
+	}
+
+}
+
+func (s *Server) handleShowAllControls(w http.ResponseWriter, r *http.Request) {
+	format := chi.URLParam(r, "format")
+
+	entries := make([]categ.Entry, 0)
+	if h != nil {
+		entries = h.Entries()
+	}
+
+	switch format {
+	case "json":
+		renderJson(w, r, entries)
+	case "txt":
+		renderTxt(w, r, entries)
+	default:
+		renderJson(w, r, entries)
+	}
+
 }

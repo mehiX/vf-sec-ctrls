@@ -151,6 +151,9 @@ func (h *Hierarchy) ControlIDs() []string {
 	return all
 }
 
+// ControlsByCategory returns the direct children of this category.
+// It does not return the searched category.
+// So if the category turns out to be a control, then an empty list will be returned
 func (h *Hierarchy) ControlsByCategory(categoryID string) []Entry {
 	n := tree.FindNode(h.Root, categoryID)
 	if n == nil {
@@ -160,11 +163,30 @@ func (h *Hierarchy) ControlsByCategory(categoryID string) []Entry {
 	controlIDs := tree.EdgesFrom(n)
 	var controls []Entry
 	for _, c := range controlIDs {
-		controls = append(controls, h.data[c])
+		if c != categoryID {
+			controls = append(controls, h.data[c])
+		}
 	}
 
 	sortEntries(controls)
 
 	return controls
 
+}
+
+func (h *Hierarchy) Parent(id string) *Entry {
+
+	pos := strings.LastIndex(id, ".")
+	if pos < 0 {
+		return nil
+	}
+
+	parentID := string(id[:pos])
+
+	parent, ok := h.data[parentID]
+	if !ok {
+		return nil
+	}
+
+	return &parent
 }

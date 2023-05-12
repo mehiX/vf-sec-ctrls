@@ -49,13 +49,25 @@
                 </div>
                 <div class="results"></div>
             </div>
+            {{ if .Parent }}
+            <h1 class="ui header">
+                <a class="item" href="/controls/{{.Parent.ID}}/html">{{.Parent.ID}} - {{.Parent.Name}}</a>
+            </h1>
+            {{ end }}
             {{ if .Control }}
             <div class="ui fluid card">
                 <div class="content">
                     <div class="header">{{.Control.ID}} - {{.Control.Name}}</div>
-                    <div class="meta">[{{.Control.Type}}]</div>
+                    <div class="meta">
+                        <div class="ui label">{{.Control.Type}}</div>
+                    </div>
                     <div class="description">
                         <p>here some description</p>
+                        <div class="ui relaxed divided list">
+                        {{ range .Children }}
+                            <a class="item" href="/controls/{{.ID}}/html">{{.ID}} - {{.Name}}</a>
+                        {{ end }}
+                        </div>
                     </div>
                 </div>
             </div>
