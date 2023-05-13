@@ -216,19 +216,17 @@ func (h *Hierarchy) ControlsByCategory(categoryID string) []Entry {
 
 }
 
-func (h *Hierarchy) Parent(id string) *Entry {
+func (h *Hierarchy) Parents(id string) []Entry {
 
-	pos := strings.LastIndex(id, ".")
-	if pos < 0 {
-		return nil
+	parts := strings.Split(id, ".")
+	if len(parts) == 1 {
+		return []Entry{}
 	}
 
-	parentID := string(id[:pos])
-
-	parent, ok := h.data[parentID]
-	if !ok {
-		return nil
+	parents := make([]Entry, 0)
+	for i := 0; i < len(parts)-1; i++ {
+		parents = append(parents, h.data[strings.Join(parts[:i+1], ".")])
 	}
 
-	return &parent
+	return parents
 }

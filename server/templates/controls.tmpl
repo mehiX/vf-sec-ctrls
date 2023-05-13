@@ -49,28 +49,38 @@
                 </div>
                 <div class="results"></div>
             </div>
-            {{ if .Parent }}
-            <h1 class="ui header">
-                <a class="item" href="/controls/{{.Parent.ID}}/html">{{.Parent.ID}} - {{.Parent.Name}}</a>
-            </h1>
-            {{ end }}
-            {{ if .Control }}
+           {{ if .Control }}
             <div class="ui fluid card">
                 <div class="content">
-                    <div class="header">{{.Control.ID}} - {{.Control.Name}}</div>
-                    <div class="meta">
-                        <div class="ui label">{{.Control.Type}}</div>
-                        {{if .Control.GDPR }}<div class="ui label">GDPR</div>{{end}}
-                    </div>
-                    <div class="description">
-                        <p>{{.Control.Description}}</p>
-                        <div class="ui relaxed divided list">
-                        {{ range .Children }}
-                            <a class="item" href="/controls/{{.ID}}/html">{{.ID}} - {{.Name}}</a>
+                    <div class="header">
+                        <div class="ui large breadcrumb">
+                        {{ range .Parents }}
+                            <a class="section" href="/controls/{{.ID}}/html">{{.ID}}</a>
+                            <i class="right angle icon divider"></i>
                         {{ end }}
+                            <div class="active section">
+                                {{.Control.ID}} - {{.Control.Name}} [{{.Control.Type}}]
+                                {{if .Control.GDPR }}<div class="ui label">GDPR</div>{{end}}
+                            </div>
                         </div>
                     </div>
                 </div>
+                {{ if .Control.Description }}
+                <div class="content">
+                    <div class="description">
+                        <p>{{.Control.Description}}</p>
+                    </div>
+                </div>
+                {{ end }}
+                {{ if .Children }}
+                <div class="content">
+                    <div class="ui relaxed divided list">
+                    {{ range .Children }}
+                        <a class="item" href="/controls/{{.ID}}/html">{{.ID}} - {{.Name}}</a>
+                    {{ end }}
+                    </div>
+                </div>
+                {{ end }}
             </div>
             {{ end }}
         </div>

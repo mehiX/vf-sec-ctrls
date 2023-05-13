@@ -225,7 +225,7 @@ func (s *Server) handleShowControlsByID(w http.ResponseWriter, r *http.Request) 
 		type responseData struct {
 			Controls []categ.Entry
 			Control  *categ.Entry // search result
-			Parent   *categ.Entry
+			Parents  []categ.Entry
 			Children []categ.Entry
 		}
 
@@ -233,7 +233,7 @@ func (s *Server) handleShowControlsByID(w http.ResponseWriter, r *http.Request) 
 		if h != nil {
 			data.Controls = h.Entries()
 			data.Control = h.Entry(id)
-			data.Parent = h.Parent(id)
+			data.Parents = h.Parents(id)
 			data.Children = h.ControlsByCategory(id)
 		}
 
