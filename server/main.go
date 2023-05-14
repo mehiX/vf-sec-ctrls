@@ -6,16 +6,20 @@ import (
 	"os"
 
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/mehix/vf-sec-ctrls/pkg/domain/categ/memory"
+	"github.com/mehix/vf-sec-ctrls/pkg/service/categ"
 )
 
 //go:embed templates
 var htmlTmpl embed.FS
 
 type Server struct {
-	tmpl      *template.Template
-	tokenAuth *jwtauth.JWTAuth
+	tmpl         *template.Template
+	tokenAuth    *jwtauth.JWTAuth
+	categService *categ.Service
 }
 
+// New returns a new Server with an in-memory categories database
 func New() *Server {
 	t, err := template.ParseFS(htmlTmpl, "**/*.tmpl")
 	if err != nil {
@@ -28,7 +32,8 @@ func New() *Server {
 	}
 
 	return &Server{
-		tmpl:      t,
-		tokenAuth: jwtauth.New("HS256", []byte(signingKey), nil),
+		tmpl:         t,
+		tokenAuth:    jwtauth.New("HS256", []byte(signingKey), nil),
+		categService: categ.NewService(memory.NewRepository()),
 	}
 }

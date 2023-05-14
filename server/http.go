@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -15,10 +16,17 @@ import (
 	"github.com/mehix/vf-sec-ctrls/categ"
 )
 
-var h *categ.Hierarchy
+//var h *categ.Hierarchy
+
+type userCtxKey struct {
+	name string
+}
+
+var UserCtxKey *userCtxKey = &userCtxKey{"userkey"}
 
 func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
-	h = orig
+	// TODO maybe add an anonymous user here
+	s.categService.Save("", orig)
 	m := chi.NewMux()
 
 	m.Use(middleware.Logger)
@@ -35,6 +43,7 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 	m.Group(func(m chi.Router) {
 		m.Use(jwtauth.Verifier(s.tokenAuth))
 		m.Use(Authenticator)
+		m.Use(UserContext)
 
 		m.Get("/user", s.handleShowUser)
 		m.Get("/upload", s.handleShowUploadForm)
@@ -52,6 +61,25 @@ func (s *Server) Handlers(orig *categ.Hierarchy) http.Handler {
 
 }
 
+func UserContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, claims, err := jwtauth.FromContext(r.Context())
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		user, ok := claims["user_id"].(string)
+		if !ok || user == "" {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		r = r.WithContext(context.WithValue(r.Context(), UserCtxKey, user))
+
+		next.ServeHTTP(w, r)
+	})
+}
 func renderJson(w http.ResponseWriter, r *http.Request, entries []categ.Entry) {
 	w.Header().Set("Content-type", "application/json;charset=utf-8")
 	if err := json.NewEncoder(w).Encode(entries); err != nil {
@@ -142,6 +170,8 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
+	userID, _ := r.Context().Value(UserCtxKey).(string)
+
 	if err := r.ParseMultipartForm(2 << 10); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -173,7 +203,8 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h = newH
+	s.categService.Save(userID, newH)
+	//h = newH
 
 	w.Header().Set("Location", "/controls/")
 	w.WriteHeader(http.StatusFound)
@@ -213,6 +244,9 @@ func (s *Server) handleShowUploadForm(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleShowControlsByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+
+	userID, _ := r.Context().Value(UserCtxKey).(string)
+	h, _ := s.categService.ForUser(userID)
 
 	controls := make([]categ.Entry, 0)
 	if h != nil {
@@ -258,6 +292,9 @@ func (s *Server) handleShowControlsByID(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleShowAllControls(w http.ResponseWriter, r *http.Request) {
 	format := chi.URLParam(r, "format")
+
+	userID, _ := r.Context().Value(UserCtxKey).(string)
+	h, _ := s.categService.ForUser(userID)
 
 	entries := make([]categ.Entry, 0)
 	if h != nil {

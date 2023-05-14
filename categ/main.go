@@ -138,6 +138,18 @@ func NewFromReader(in io.ReadCloser, sheetName string) (*Hierarchy, error) {
 	return h, nil
 }
 
+func NewFromList(entries []Entry) *Hierarchy {
+	h := &Hierarchy{
+		data: make(map[string]Entry),
+	}
+	for _, e := range entries {
+		h.data[string(e.ID)] = e
+	}
+	h.Root = BuildTree(entries)
+
+	return h
+}
+
 func (h *Hierarchy) Entries() []Entry {
 	entries := make([]Entry, 0, len(h.data))
 	for _, v := range h.data {
