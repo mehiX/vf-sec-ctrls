@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/mehix/vf-sec-ctrls/categ"
+	"github.com/mehix/vf-sec-ctrls/pkg/service/categ"
 	"github.com/mehix/vf-sec-ctrls/server"
 	"github.com/spf13/cobra"
 )

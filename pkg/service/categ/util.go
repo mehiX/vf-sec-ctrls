@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/mehix/vf-sec-ctrls/pkg/domain/categ"
 )
 
-func sortEntries(entries []Entry) {
+func sortEntries(entries []categ.Entry) {
 	sort.Slice(entries, func(i, j int) bool {
 		partsI := strings.Split(string(entries[i].ID), ".")
 		sI := ""

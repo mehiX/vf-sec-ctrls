@@ -8,52 +8,18 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mehix/vf-sec-ctrls/pkg/domain/categ"
 	"github.com/mehix/vf-sec-ctrls/tree"
 	"github.com/xuri/excelize/v2"
 )
 
 type Hierarchy struct {
-	data map[string]Entry
+	data map[string]categ.Entry
 	Root *tree.Node
 }
 
 func NewHierarchy() *Hierarchy {
-	return &Hierarchy{data: make(map[string]Entry, 0)}
-}
-
-type EntryID string
-
-type Entry struct {
-	Type                  string
-	ID                    EntryID
-	Name                  string
-	Description           string
-	C                     string
-	I                     string
-	A                     string
-	T                     string
-	PD                    string
-	NSI                   string
-	SESE                  string
-	OTCI                  string
-	CSRDirection          string // CS&R direction for control type
-	SPSA                  string
-	GDPR                  bool
-	ExternalSupplier      bool
-	AssetType             string
-	OperationalCapability string
-	PartOfGISR            bool
-	LastUpdated           string
-	OldID                 string
-}
-
-func (e Entry) Indent(s string) string {
-	n := len(strings.Split(string(e.ID), ".")) - 1
-	return strings.Repeat(s, n)
-}
-
-func (e Entry) String() string {
-	return fmt.Sprintf("%s - %s [%s]", e.ID, e.Name, e.Type)
+	return &Hierarchy{data: make(map[string]categ.Entry, 0)}
 }
 
 func NewFromFile(fn string, sheetName string) (*Hierarchy, error) {
@@ -105,9 +71,9 @@ func NewFromReader(in io.ReadCloser, sheetName string) (*Hierarchy, error) {
 		cols := make([]string, 21)
 		copy(cols, origCols)
 
-		entry := Entry{
+		entry := categ.Entry{
 			Type: strings.TrimSpace(cols[0]),
-			ID:   EntryID(strings.TrimSpace(cols[1])),
+			ID:   categ.EntryID(strings.TrimSpace(cols[1])),
 			Name: strings.TrimSpace(cols[2]),
 		}
 
@@ -138,9 +104,9 @@ func NewFromReader(in io.ReadCloser, sheetName string) (*Hierarchy, error) {
 	return h, nil
 }
 
-func NewFromList(entries []Entry) *Hierarchy {
+func NewFromList(entries []categ.Entry) *Hierarchy {
 	h := &Hierarchy{
-		data: make(map[string]Entry),
+		data: make(map[string]categ.Entry),
 	}
 	for _, e := range entries {
 		h.data[string(e.ID)] = e
@@ -150,8 +116,8 @@ func NewFromList(entries []Entry) *Hierarchy {
 	return h
 }
 
-func (h *Hierarchy) Entries() []Entry {
-	entries := make([]Entry, 0, len(h.data))
+func (h *Hierarchy) Entries() []categ.Entry {
+	entries := make([]categ.Entry, 0, len(h.data))
 	for _, v := range h.data {
 		entries = append(entries, v)
 	}
@@ -159,7 +125,7 @@ func (h *Hierarchy) Entries() []Entry {
 	return entries
 }
 
-func (h *Hierarchy) Entry(id string) *Entry {
+func (h *Hierarchy) Entry(id string) *categ.Entry {
 	e, ok := h.data[id]
 	if !ok {
 		return nil
@@ -168,7 +134,7 @@ func (h *Hierarchy) Entry(id string) *Entry {
 	return &e
 }
 
-func BuildTree(entries []Entry) *tree.Node {
+func BuildTree(entries []categ.Entry) *tree.Node {
 
 	ids := make([]string, len(entries))
 	for idx := range entries {
@@ -208,14 +174,14 @@ func (h *Hierarchy) ControlIDs() []string {
 // ControlsByCategory returns the direct children of this category.
 // It does not return the searched category.
 // So if the category turns out to be a control, then an empty list will be returned
-func (h *Hierarchy) ControlsByCategory(categoryID string) []Entry {
+func (h *Hierarchy) ControlsByCategory(categoryID string) []categ.Entry {
 	n := tree.FindNode(h.Root, categoryID)
 	if n == nil {
-		return []Entry{}
+		return []categ.Entry{}
 	}
 
 	controlIDs := tree.EdgesFrom(n)
-	var controls []Entry
+	var controls []categ.Entry
 	for _, c := range controlIDs {
 		if c != categoryID {
 			controls = append(controls, h.data[c])
@@ -228,14 +194,14 @@ func (h *Hierarchy) ControlsByCategory(categoryID string) []Entry {
 
 }
 
-func (h *Hierarchy) Parents(id string) []Entry {
+func (h *Hierarchy) Parents(id string) []categ.Entry {
 
 	parts := strings.Split(id, ".")
 	if len(parts) == 1 {
-		return []Entry{}
+		return []categ.Entry{}
 	}
 
-	parents := make([]Entry, 0)
+	parents := make([]categ.Entry, 0)
 	for i := 0; i < len(parts)-1; i++ {
 		parents = append(parents, h.data[strings.Join(parts[:i+1], ".")])
 	}

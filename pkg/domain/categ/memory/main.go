@@ -3,7 +3,7 @@ package memory
 import (
 	"sync"
 
-	"github.com/mehix/vf-sec-ctrls/categ"
+	"github.com/mehix/vf-sec-ctrls/pkg/domain/categ"
 )
 
 type repository struct {

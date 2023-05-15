@@ -13,7 +13,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
-	"github.com/mehix/vf-sec-ctrls/categ"
+	dom "github.com/mehix/vf-sec-ctrls/pkg/domain/categ"
+	"github.com/mehix/vf-sec-ctrls/pkg/service/categ"
 )
 
 //var h *categ.Hierarchy
@@ -80,14 +81,14 @@ func UserContext(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-func renderJson(w http.ResponseWriter, r *http.Request, entries []categ.Entry) {
+func renderJson(w http.ResponseWriter, r *http.Request, entries []dom.Entry) {
 	w.Header().Set("Content-type", "application/json;charset=utf-8")
 	if err := json.NewEncoder(w).Encode(entries); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func renderTxt(w http.ResponseWriter, r *http.Request, entries []categ.Entry) {
+func renderTxt(w http.ResponseWriter, r *http.Request, entries []dom.Entry) {
 	w.Header().Set("Context-type", "text/plain;charset=utf-8")
 	for _, e := range entries {
 		w.Write([]byte(e.String() + "\n"))
@@ -152,7 +153,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(tokenStr))
 	} else {
 		// redirect browser to a secure page
-		w.Header().Set("Location", "/upload")
+		w.Header().Set("Location", "/controls")
 		w.WriteHeader(http.StatusFound)
 	}
 }
@@ -248,19 +249,23 @@ func (s *Server) handleShowControlsByID(w http.ResponseWriter, r *http.Request) 
 	userID, _ := r.Context().Value(UserCtxKey).(string)
 	h, _ := s.categService.ForUser(userID)
 
-	controls := make([]categ.Entry, 0)
-	if h != nil {
-		controls = h.ControlsByCategory(id)
+	if h == nil || len(h.Entries()) == 0 {
+		// redirect to /upload
+		w.Header().Set("Location", "/upload")
+		w.WriteHeader(http.StatusFound)
+		return
 	}
+
+	controls := h.ControlsByCategory(id)
 
 	format := chi.URLParam(r, "format")
 
 	renderHTML := func() {
 		type responseData struct {
-			Controls []categ.Entry
-			Control  *categ.Entry // search result
-			Parents  []categ.Entry
-			Children []categ.Entry
+			Controls []dom.Entry
+			Control  *dom.Entry // search result
+			Parents  []dom.Entry
+			Children []dom.Entry
 		}
 
 		data := responseData{}
@@ -296,7 +301,7 @@ func (s *Server) handleShowAllControls(w http.ResponseWriter, r *http.Request) {
 	userID, _ := r.Context().Value(UserCtxKey).(string)
 	h, _ := s.categService.ForUser(userID)
 
-	entries := make([]categ.Entry, 0)
+	entries := make([]dom.Entry, 0)
 	if h != nil {
 		entries = h.Entries()
 	}
