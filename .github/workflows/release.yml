@@ -27,7 +27,7 @@ jobs:
               uses: actions/create-release@v1
               id: create_release
               env:
-                GITHUB_TOKEN: ${{github.token}}
+                GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
               with:
                 draft: false
                 prerelease: false
@@ -46,7 +46,7 @@ jobs:
             - name: upload windows artifact
               uses: actions/upload-release-asset@v1
               env:
-                GITHUB_TOKEN: ${{github.token}}
+                GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
               with:
                 upload_url: ${{steps.create_release.outputs.upload_url}}
                 asset_path: ./dist/sec-ctrls_windows-amd64.tar.gz
@@ -56,7 +56,7 @@ jobs:
             - name: upload darwin (arm64) artifact
               uses: actions/upload-release-asset@v1
               env:
-                GITHUB_TOKEN: ${{github.token}}
+                GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
               with:
                 upload_url: ${{steps.create_release.outputs.upload_url}}
                 asset_path: ./dist/sec-ctrls_darwin-arm64.tar.gz
