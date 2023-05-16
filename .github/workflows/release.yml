@@ -33,6 +33,7 @@ jobs:
                 prerelease: false
                 release_name: v${{github.ref}}
                 tag_name: ${{github.ref}}
+                body: New release
 
             - name: build artifacts
               run: make crossbinary-default
@@ -60,4 +61,4 @@ jobs:
                 upload_url: ${{steps.create_release.outputs.upload_url}}
                 asset_path: ./dist/sec-ctrls_darwin-arm64.tar.gz
                 asset_name: ./dist/sec-ctrls-darwin-arm64.tar.gz
-                asset-content-type: application/gzip
+                asset_content_type: application/gzip
