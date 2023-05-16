@@ -1,0 +1,63 @@
+name: Release
+
+on:
+    push:
+        tags:
+            - '*'
+
+env:
+    GO_VERSION=1.20.x
+
+jobs:
+
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Set up Go
+              uses: actions/setup-go@v3
+              with:
+                go-version: ${{ env.GO_VERSION }}
+
+            - name: build
+              run: make binary
+
+            - name: release
+              uses: actions/create-release@v1
+              id: create_release
+              env:
+                GITHUB_TOKEN: ${{github.token}}
+              with:
+                draft: false
+                prerelease: false
+                release_name: v${{github.ref}}
+                tag_name: ${{github.ref}}
+
+            - name: build artifacts
+              run: make crossbinary-default
+
+            - name: compress artifacts
+              run: |
+                tar czvf ./dist/sec-ctrls_windows-amd64.tar.gz ./dist/sec-ctrls_windows-amd64.exe
+                tar czvf ./dist/sec-ctrls_darwin-arm64.tar.gz ./dist/sec-ctrls_darwin-arm64
+
+            - name: upload windows artifact
+              uses: actions/upload-release-asset@v1
+              env:
+                GITHUB_TOKEN: ${{github.token}}
+              with:
+                upload_url: ${{steps.create_release.outputs.upload_url}}
+                asset_path: ./dist/sec-ctrls_windows-amd64.tar.gz
+                asset_name: sec-ctrls_windows-amd64.tar.gz
+                asset_content_type: application/gzip
+
+            - name: upload darwin (arm64) artifact
+              uses: actions/upload-release-asset@v1
+              env:
+                GITHUB_TOKEN: ${{github.token}}
+              with:
+                upload_url: ${{steps.create_release.outputs.upload_url}}
+                asset_path: ./dist/sec-ctrls_darwin-arm64.tar.gz
+                asset_name: ./dist/sec-ctrls-darwin-arm64.tar.gz
+                asset-content-type: application/gzip

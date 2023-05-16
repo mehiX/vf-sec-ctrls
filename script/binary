@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -e
+
+rm -f dist/sec-ctrls
+
+FLAGS=()
+if [ -n "${VERBOSE}" ]; then
+    FLAGS+=(-v)
+fi
+
+if [ -z "${VERSION}" ]; then
+    VERSION=$(git rev-parse HEAD)
+fi
+
+if [ -z "${DATE}" ]; then
+    DATE=$(date -u '+%Y-%m-%d_%I:%M:%S%p_%Z%z')
+fi
+
+echo "Building ${VERSION} ${DATE}"
+
+PKG_VERSION="github.com/mehix/vf-sec-ctrls/pkg/version"
+GO_BUILD_CMD="go build -ldflags"
+GO_BUILD_ARGS="-s -w -X ${PKG_VERSION}.Version=${VERSION} -X ${PKG_VERSION}.BuildDate=${DATE}"
+
+CGO_ENABLED=0 ${GO_BUILD_CMD} "${GO_BUILD_ARGS}" -o "dist/sec-ctrls" ./main.go
